@@ -1,42 +1,31 @@
 import os
-import json
 import requests
 from datetime import datetime, timedelta, timezone
 
 # ── 環境変数 ──────────────────────────────────────────────
-X_BEARER_TOKEN      = os.environ["X_BEARER_TOKEN"]
-X_API_KEY           = os.environ["X_API_KEY"]
-X_API_SECRET        = os.environ["X_API_SECRET"]
-X_ACCESS_TOKEN      = os.environ["X_ACCESS_TOKEN"]
-X_ACCESS_SECRET     = os.environ["X_ACCESS_SECRET"]
-ANTHROPIC_API_KEY   = os.environ["ANTHROPIC_API_KEY"]
-SLACK_WEBHOOK_URL   = os.environ["SLACK_WEBHOOK_URL"]
+X_BEARER_TOKEN    = os.environ["X_BEARER_TOKEN"]
+ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 
 JST = timezone(timedelta(hours=9))
-
-# ── X API: 自分のユーザーIDを取得 ─────────────────────────
-def get_user_id():
-    url = "https://api.twitter.com/2/users/me"
-    headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
-    r = requests.get(url, headers=headers)
-    r.raise_for_status()
-    return r.json()["data"]["id"]
+USER_ID = "1957292180013236224"  # @Y0shiCareer
 
 # ── X API: 前日のツイートを取得 ───────────────────────────
-def get_yesterday_tweets(user_id: str):
-    now = datetime.now(JST)
-    yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    yesterday_end   = yesterday_start.replace(hour=23, minute=59, second=59)
+def get_yesterday_tweets():
+    # テスト用：3/15?3/17を取得
+    yesterday_start = datetime(2026, 3, 15, 0, 0, 0, tzinfo=timezone.utc)
+    yesterday_end   = datetime(2026, 3, 17, 23, 59, 59, tzinfo=timezone.utc)
 
-    url = f"https://api.twitter.com/2/users/{user_id}/tweets"
+    url = f"https://api.twitter.com/2/users/{USER_ID}/tweets"
     headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
     params = {
-        "start_time": yesterday_start.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "end_time":   yesterday_end.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "tweet.fields": "public_metrics,created_at,in_reply_to_user_id,text",
+        "start_time": yesterday_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "end_time":   yesterday_end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "tweet.fields": "public_metrics,created_at,text,in_reply_to_user_id",
         "max_results": 100,
     }
     r = requests.get(url, headers=headers, params=params)
+    print(f"  X API status: {r.status_code}")
     r.raise_for_status()
     return r.json().get("data", [])
 
@@ -57,10 +46,10 @@ def analyze_with_claude(tweets: list) -> str:
 {tweet_summary}
 
 以下の形式で回答してください：
-1. $D83D$DCCA 昨日のサマリー（投稿数・合計エンゲージメント）
-2. $D83C$DFC6 最もパフォーマンスが高かった投稿とその理由
-3. $D83D$DCA1 気づいたパターンやインサイト（2$301C3点）
-4. $D83D$DE80 明日に向けたアクションアドバイス（1$301C2点）
+1. ?? 昨日のサマリー（投稿数・合計エンゲージメント）
+2. ?? 最もパフォーマンスが高かった投稿とその理由
+3. ?? 気づいたパターンやインサイト（2?3点）
+4. ?? 明日に向けたアクションアドバイス（1?2点）
 
 簡潔かつ実用的に、箇条書きで答えてください。"""
 
@@ -81,21 +70,17 @@ def analyze_with_claude(tweets: list) -> str:
 # ── Slack通知 ─────────────────────────────────────────────
 def send_to_slack(analysis: str, tweet_count: int):
     today = datetime.now(JST).strftime("%Y/%m/%d")
-    text = f"*$D83D$DCC8 X 日次エンゲージメントレポート（{today}）*\n\n{analysis}"
+    text = f"*?? X 日次エンゲージメントレポート（{today}）*\n\n{analysis}"
     payload = {"text": text}
     r = requests.post(SLACK_WEBHOOK_URL, json=payload)
     r.raise_for_status()
-    print(f"$2705 Slack通知送信完了（対象ツイート数: {tweet_count}）")
+    print(f"? Slack通知送信完了（対象ツイート数: {tweet_count}）")
 
 # ── メイン ────────────────────────────────────────────────
 def main():
     print("? X日次分析ツール 起動")
-    user_id = "1957292180013236224"  # @Y0shiCareer
-    print(f"  ユーザーID: {user_id}")
-
-    tweets = get_yesterday_tweets(user_id)
+    tweets = get_yesterday_tweets()
     print(f"  取得ツイート数: {len(tweets)}")
-
     analysis = analyze_with_claude(tweets)
     send_to_slack(analysis, len(tweets))
 
