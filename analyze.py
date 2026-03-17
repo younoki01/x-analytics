@@ -12,7 +12,6 @@ USER_ID = "1957292180013236224"  # @Y0shiCareer
 
 # ── X API: 前日のツイートを取得 ───────────────────────────
 def get_yesterday_tweets():
-    # テスト用：3/15?3/17を取得
     yesterday_start = datetime(2026, 3, 15, 0, 0, 0, tzinfo=timezone.utc)
     yesterday_end   = datetime(2026, 3, 17, 23, 59, 59, tzinfo=timezone.utc)
 
@@ -26,6 +25,7 @@ def get_yesterday_tweets():
     }
     r = requests.get(url, headers=headers, params=params)
     print(f"  X API status: {r.status_code}")
+    print(f"  X API response: {r.text[:500]}")  # ← 追加
     r.raise_for_status()
     return r.json().get("data", [])
 
