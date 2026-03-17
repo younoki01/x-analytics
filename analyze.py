@@ -8,7 +8,7 @@ ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 
 JST = timezone(timedelta(hours=9))
-USER_ID = "1957292180013236224"  # @Y0shiCareer
+USER_ID = "1524187140229562368"  # @Y0shiCareer
 
 # ── X API: 前日のツイートを取得 ───────────────────────────
 def get_yesterday_tweets():
