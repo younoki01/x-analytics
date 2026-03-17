@@ -57,10 +57,10 @@ def analyze_with_claude(tweets: list) -> str:
 {tweet_summary}
 
 以下の形式で回答してください：
-1. 📊 昨日のサマリー（投稿数・合計エンゲージメント）
-2. 🏆 最もパフォーマンスが高かった投稿とその理由
-3. 💡 気づいたパターンやインサイト（2〜3点）
-4. 🚀 明日に向けたアクションアドバイス（1〜2点）
+1. $D83D$DCCA 昨日のサマリー（投稿数・合計エンゲージメント）
+2. $D83C$DFC6 最もパフォーマンスが高かった投稿とその理由
+3. $D83D$DCA1 気づいたパターンやインサイト（2$301C3点）
+4. $D83D$DE80 明日に向けたアクションアドバイス（1$301C2点）
 
 簡潔かつ実用的に、箇条書きで答えてください。"""
 
@@ -81,16 +81,16 @@ def analyze_with_claude(tweets: list) -> str:
 # ── Slack通知 ─────────────────────────────────────────────
 def send_to_slack(analysis: str, tweet_count: int):
     today = datetime.now(JST).strftime("%Y/%m/%d")
-    text = f"*📈 X 日次エンゲージメントレポート（{today}）*\n\n{analysis}"
+    text = f"*$D83D$DCC8 X 日次エンゲージメントレポート（{today}）*\n\n{analysis}"
     payload = {"text": text}
     r = requests.post(SLACK_WEBHOOK_URL, json=payload)
     r.raise_for_status()
-    print(f"✅ Slack通知送信完了（対象ツイート数: {tweet_count}）")
+    print(f"$2705 Slack通知送信完了（対象ツイート数: {tweet_count}）")
 
 # ── メイン ────────────────────────────────────────────────
 def main():
-    print("▶ X日次分析ツール 起動")
-    user_id = get_user_id()
+    print("? X日次分析ツール 起動")
+    user_id = "1957292180013236224"  # @Y0shiCareer
     print(f"  ユーザーID: {user_id}")
 
     tweets = get_yesterday_tweets(user_id)
