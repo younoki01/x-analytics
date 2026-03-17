@@ -12,8 +12,9 @@ USER_ID = "1524187140229562368"  # @Y0shiCareer
 
 # ── X API: 前日のツイートを取得 ───────────────────────────
 def get_yesterday_tweets():
-    yesterday_start = datetime(2026, 3, 15, 0, 0, 0, tzinfo=timezone.utc)
-    yesterday_end   = datetime(2026, 3, 17, 23, 59, 59, tzinfo=timezone.utc)
+    now = datetime.now(JST)
+    yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_end   = yesterday_start.replace(hour=23, minute=59, second=59)
 
     url = f"https://api.twitter.com/2/users/{USER_ID}/tweets"
     headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
