@@ -2,7 +2,6 @@ import os
 import requests
 from datetime import datetime, timedelta, timezone
 
-# ── 環境変数 ──────────────────────────────────────────────
 THREADS_ACCESS_TOKEN = os.environ["THREADS_ACCESS_TOKEN"]
 ANTHROPIC_API_KEY    = os.environ["ANTHROPIC_API_KEY"]
 SLACK_WEBHOOK_URL    = os.environ["SLACK_WEBHOOK_URL"]
@@ -15,10 +14,9 @@ def get_yesterday_threads():
     yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday_end   = yesterday_start.replace(hour=23, minute=59, second=59)
 
-    # 投稿一覧取得
     url = "https://graph.threads.net/v1.0/me/threads"
     params = {
-        "fields": "id,text,timestamp,like_count,replies_count,repost_count,views",
+        "fields": "id,text,timestamp,like_count,replies_count,repost_count,quote_count",
         "since": int(yesterday_start.astimezone(timezone.utc).timestamp()),
         "until": int(yesterday_end.astimezone(timezone.utc).timestamp()),
         "access_token": THREADS_ACCESS_TOKEN,
@@ -29,6 +27,26 @@ def get_yesterday_threads():
     r.raise_for_status()
     posts = r.json().get("data", [])
     print(f"取得投稿数: {len(posts)}")
+
+    # 各投稿のインサイトを個別取得
+    for post in posts:
+        post_id = post["id"]
+        insight_url = f"https://graph.threads.net/v1.0/{post_id}/insights"
+        insight_params = {
+            "metric": "views,likes,replies,reposts,quotes",
+            "access_token": THREADS_ACCESS_TOKEN,
+        }
+        ri = requests.get(insight_url, params=insight_params)
+        if ri.status_code == 200:
+            data = ri.json().get("data", [])
+            for metric in data:
+                name = metric.get("name")
+                value = metric.get("values", [{}])[0].get("value", 0)
+                post[f"insight_{name}"] = value
+            print(f"  投稿 {post_id}: views={post.get('insight_views',0)}, likes={post.get('insight_likes',0)}")
+        else:
+            print(f"  インサイト取得失敗 {post_id}: {ri.status_code} {ri.text[:100]}")
+
     return posts
 
 # ── Claude API: 分析 ──────────────────────────────────────
@@ -38,14 +56,14 @@ def analyze_with_claude(posts: list) -> str:
 
     post_summary = "\n".join([
         f"- [{p.get('timestamp','')}] {p.get('text','')[:80]}{'...' if len(p.get('text',''))>80 else ''}\n"
-        f"  いいね:{p.get('like_count',0)} 返信:{p.get('replies_count',0)} "
-        f"リポスト:{p.get('repost_count',0)} 閲覧:{p.get('views',0)}"
+        f"  閲覧:{p.get('insight_views',0)} いいね:{p.get('insight_likes',0)} "
+        f"返信:{p.get('insight_replies',0)} リポスト:{p.get('insight_reposts',0)}"
         for p in posts
     ])
 
-    total_views   = sum(p.get('views', 0) or 0 for p in posts)
-    total_likes   = sum(p.get('like_count', 0) or 0 for p in posts)
-    total_replies = sum(p.get('replies_count', 0) or 0 for p in posts)
+    total_views   = sum(p.get('insight_views', 0) or 0 for p in posts)
+    total_likes   = sum(p.get('insight_likes', 0) or 0 for p in posts)
+    total_replies = sum(p.get('insight_replies', 0) or 0 for p in posts)
 
     prompt = f"""以下は昨日のThreads投稿データです。エンゲージメントを分析して日本語で報告してください。
 
