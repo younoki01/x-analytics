@@ -1,0 +1,29 @@
+name: Daily Threads Analytics
+
+on:
+  schedule:
+    - cron: '10 15 * * *'  # 毎日UTC 15:10 = JST 0:10
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Threads analysis
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL:    ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python analyze_threads.py
